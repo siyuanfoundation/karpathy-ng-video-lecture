@@ -1,0 +1,54 @@
+apiVersion: ray.io/v1
+kind: RayCluster
+metadata:
+  name: raycluster-mini
+spec:
+  rayVersion: '2.37.0'
+  headGroupSpec:
+    rayStartParams: {}
+    template:
+      spec:
+        serviceAccountName: ray-ksa
+        nodeSelector:
+          iam.gke.io/gke-metadata-server-enabled: "true"
+        containers:
+        - name: ray-head
+          image: rayproject/ray:2.37.0
+          resources:
+            limits:
+              cpu: 1
+              memory: 2Gi
+            requests:
+              cpu: 1
+              memory: 2Gi
+          ports:
+          - containerPort: 6379
+            name: gcs-server
+          - containerPort: 8265
+            name: dashboard
+          - containerPort: 10001
+            name: client
+  workerGroupSpecs:
+    # the pod replicas in this group typed worker
+    - replicas: 1
+      minReplicas: 1
+      maxReplicas: 5
+      # logical group name, for this called small-group, also can be functional
+      groupName: workergroup
+      rayStartParams: {}
+      #pod template
+      template:
+        spec:
+          serviceAccountName: ray-ksa
+          nodeSelector:
+            iam.gke.io/gke-metadata-server-enabled: "true"
+          containers:
+            - name: ray-worker # must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc'
+              image: rayproject/ray:2.37.0
+              resources:
+                limits:
+                  cpu: 4
+                  memory: 12G
+                requests:
+                  cpu: 2
+                  memory: 6G

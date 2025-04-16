@@ -230,17 +230,17 @@ def train_gpt(config=default_config):
             losses = estimate_loss(model, config)
             train_loss = f"{losses['train']:.4f}"
             val_loss = f"{losses['val']:.4f}"
-            print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+            # print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
              # [3] Report metrics and checkpoint.
             metrics = {"train_loss": float(train_loss), "val_loss": float(val_loss), "iter": iter}
-            # with tempfile.TemporaryDirectory() as temp_checkpoint_dir:
-            #     torch.save(
-            #         model.module.state_dict(),
-            #         os.path.join(temp_checkpoint_dir, "model.pt")
-            #     )
+            with tempfile.TemporaryDirectory() as temp_checkpoint_dir:
+                torch.save(
+                    model.module.state_dict(),
+                    os.path.join(temp_checkpoint_dir, "model.pt")
+                )
             ray.train.report(
                 metrics,
-                # checkpoint=ray.train.Checkpoint.from_directory(temp_checkpoint_dir),
+                checkpoint=ray.train.Checkpoint.from_directory(temp_checkpoint_dir),
             )
             if ray.train.get_context().get_world_rank() == 0:
                 print(metrics)
@@ -263,10 +263,10 @@ scaling_config = ray.train.ScalingConfig(num_workers=3, resources_per_worker=res
 # [5] Launch distributed training job.
 trainer = ray.train.torch.TorchTrainer(
     train_gpt,
-    # run_config=ray.train.RunConfig(
-    #     storage_path="gs://sizhang-ray-experimental/ray-experimental/",
-    #     name="ray_gpt",
-    # ),
+    run_config=ray.train.RunConfig(
+        storage_path="gs://sizhang-ray-experimental/ray-experimental/",
+        name="ray_gpt",
+    ),
     scaling_config=scaling_config,
     # [5a] If running in a multi-node cluster, this is where you
     # should configure the run's persistent storage that is accessible
